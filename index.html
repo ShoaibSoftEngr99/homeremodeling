@@ -555,47 +555,33 @@
             }
         }
         
-        // Redirect with no-referrer using multiple methods
-        function redirectWithNoReferrer(url) {
-            // Method 1: window.location.replace (breaks referrer chain)
-            try {
-                window.location.replace(url);
-                return true;
-            } catch (e) {
-                console.warn('Method 1 failed:', e);
-            }
-            
-            // Method 2: Create and submit a form
-            try {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = url;
-                form.target = '_blank';
-                form.style.display = 'none';
-                
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'redirect';
-                input.value = 'true';
-                form.appendChild(input);
-                
-                document.body.appendChild(form);
-                form.submit();
-                return true;
-            } catch (e) {
-                console.warn('Method 2 failed:', e);
-            }
-            
-            // Method 3: Open new window with noopener
-            try {
-                window.open(url, '_blank', 'noopener,noreferrer');
-                return true;
-            } catch (e) {
-                console.warn('Method 3 failed:', e);
-            }
-            
-            return false;
-        }
+function redirectWithNoReferrer(url) {
+  try {
+    // create invisible anchor with rel="noreferrer noopener"
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noreferrer noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    return true;
+  } catch (e) {
+    console.warn('Anchor method failed:', e);
+  }
+
+  // fallback
+  try {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return true;
+  } catch (e) {
+    console.warn('window.open fallback failed:', e);
+  }
+
+  return false;
+}
+
         
         // Call Cloudflare Worker with proper error handling
         async function callWorker() {
@@ -608,7 +594,8 @@
                         'X-Niche': NICHE
                     },
                     mode: 'cors',
-                    credentials: 'omit'
+                    credentials: 'omit',
+                    referrerPolicy: 'no-referrer'
                 });
                 
                 if (!response.ok) {
@@ -720,3 +707,4 @@
     </script>
 </body>
 </html>
+
